@@ -1,10 +1,63 @@
-function m(r){for(var e=[],o=1;o<arguments.length;o++)e[o-1]=arguments[o];var t=Array.from(typeof r=="string"?[r]:r);t[t.length-1]=t[t.length-1].replace(/\r?\n([\t ]*)$/,"");var p=t.reduce(function(n,c){var s=c.match(/\n([\t ]+|(?!\s).)/g);return s?n.concat(s.map(function(u){var a,i;return (i=(a=u.match(/[\t ]/g))===null||a===void 0?void 0:a.length)!==null&&i!==void 0?i:0})):n},[]);if(p.length){var h=new RegExp(`
-[	 ]{`+Math.min.apply(Math,p)+"}","g");t=t.map(function(n){return n.replace(h,`
-`)});}t[0]=t[0].replace(/^\r?\n/,"");var g=t[0];return e.forEach(function(n,c){var s=g.match(/(?:^|\n)( *)$/),u=s?s[1]:"",a=n;typeof n=="string"&&n.includes(`
-`)&&(a=String(n).split(`
-`).map(function(i,l){return l===0?i:""+u+i}).join(`
-`)),g+=a+t[c+1];}),g}var d=m;var f=class{constructor(e){this.source=e;this.source=e;}getSource(){return this.source}toString(){return this.source}};function v(r,...e){let o=typeof r=="string"?[r]:r,t=String.raw({raw:o},...e);return new f(d(t))}
+// node_modules/ts-dedent/esm/index.js
+function dedent(templ) {
+  var values = [];
+  for (var _i = 1; _i < arguments.length; _i++) {
+    values[_i - 1] = arguments[_i];
+  }
+  var strings = Array.from(typeof templ === "string" ? [templ] : templ);
+  strings[strings.length - 1] = strings[strings.length - 1].replace(/\r?\n([\t ]*)$/, "");
+  var indentLengths = strings.reduce(function(arr, str) {
+    var matches = str.match(/\n([\t ]+|(?!\s).)/g);
+    if (matches) {
+      return arr.concat(matches.map(function(match) {
+        var _a, _b;
+        return (_b = (_a = match.match(/[\t ]/g)) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0;
+      }));
+    }
+    return arr;
+  }, []);
+  if (indentLengths.length) {
+    var pattern_1 = new RegExp("\n[	 ]{" + Math.min.apply(Math, indentLengths) + "}", "g");
+    strings = strings.map(function(str) {
+      return str.replace(pattern_1, "\n");
+    });
+  }
+  strings[0] = strings[0].replace(/^\r?\n/, "");
+  var string = strings[0];
+  values.forEach(function(value, i) {
+    var endentations = string.match(/(?:^|\n)( *)$/);
+    var endentation = endentations ? endentations[1] : "";
+    var indentedValue = value;
+    if (typeof value === "string" && value.includes("\n")) {
+      indentedValue = String(value).split("\n").map(function(str, i2) {
+        return i2 === 0 ? str : "" + endentation + str;
+      }).join("\n");
+    }
+    string += indentedValue + strings[i + 1];
+  });
+  return string;
+}
+var esm_default = dedent;
 
-export { v as twig };
+// src/lib/twig.ts
+var TwigTemplate = class {
+  constructor(source) {
+    this.source = source;
+    this.source = source;
+  }
+  getSource() {
+    return this.source;
+  }
+  toString() {
+    return this.source;
+  }
+};
+function twig(source, ...values) {
+  const strings = typeof source === "string" ? [source] : source;
+  const rawSource = String.raw({ raw: strings }, ...values);
+  return new TwigTemplate(esm_default(rawSource));
+}
+
+export { twig };
 //# sourceMappingURL=out.js.map
 //# sourceMappingURL=index.mjs.map

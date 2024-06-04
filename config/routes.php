@@ -11,4 +11,13 @@ return function (RoutingConfigurator $routes) {
             ->methods(['POST'])
             ->controller('storybook.controller.render_story')
     ;
+
+    $routes->import(
+        '../src/Api/',
+        'attribute',
+        false,
+    )
+    ->prefix('/_storybook/api')
+    ->namePrefix('storybook_api')
+    ;
 };

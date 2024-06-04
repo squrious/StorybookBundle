@@ -6,6 +6,7 @@ use Storybook\ArgsProcessor\StorybookArgsProcessor;
 use Storybook\Attributes\AsArgsProcessor;
 use Storybook\Attributes\AsComponentMock;
 use Storybook\Command\GeneratePreviewCommand;
+use Storybook\Command\GetComponentClassPathCommand;
 use Storybook\Command\StorybookInitCommand;
 use Storybook\Controller\StorybookController;
 use Storybook\DependencyInjection\Compiler\ComponentMockPass;
@@ -20,11 +21,13 @@ use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Processor;
+use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Argument\AbstractArgument;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
+use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
 use Twig\Sandbox\SecurityPolicy;
 
@@ -64,6 +67,13 @@ class StorybookExtension extends Extension implements ConfigurationInterface, Pr
                 ]);
             }
         );
+
+        $loader = new PhpFileLoader(
+            $container,
+            new FileLocator(__DIR__ . '/../../config')
+        );
+
+        $loader->load('api.php');
 
         $config = (new Processor())->processConfiguration($this, $configs);
 
@@ -124,6 +134,10 @@ class StorybookExtension extends Extension implements ConfigurationInterface, Pr
             ->setArgument(1, new Reference('event_dispatcher'))
             ->addTag('console.command', ['name' => 'storybook:generate-preview'])
         ;
+
+        $container->register('storybook.resolve_component_file', GetComponentClassPathCommand::class)
+            ->setArgument(0, new Reference('ux.twig_component.component_factory'))
+            ->addTag('console.command', ['name' => 'storybook:component-file-path']);
 
         // Init command
         $container->register('storybook.init_command', StorybookInitCommand::class)

@@ -5,9 +5,18 @@ import dedent from 'ts-dedent';
 export class TwigComponentResolver {
     constructor(private config: TwigComponentConfiguration) {}
 
+    isInAnonymousDirectory(file: string) {
+        return 0 === file.indexOf(this.config.anonymousTemplateDirectory);
+    }
+
     resolveNameFromFile(file: string) {
         const stripDirectory = (file: string, dir: string) => {
-            return file.replace(dir, '').replace(/^\//, '').replace('/', ':').replace('.html.twig', '');
+            return file
+                .replace(dir, '')
+                .replace(/^\//, '')
+                .replace('/', ':')
+                .replace('.html.twig', '')
+            ;
         };
 
         for (const namespace in this.config.namespaces) {
@@ -21,7 +30,7 @@ export class TwigComponentResolver {
             }
         }
 
-        if (0 === file.indexOf(this.config.anonymousTemplateDirectory)) {
+        if (this.isInAnonymousDirectory(file)) {
             return stripDirectory(file, this.config.anonymousTemplateDirectory);
         }
 
@@ -53,5 +62,9 @@ export class TwigComponentResolver {
         } catch (err) {
             throw new Error(dedent`Unable to find template file for component "${name}": ${err}`);
         }
+    }
+
+    resolvePhpFileFromName(name: string) {
+
     }
 }

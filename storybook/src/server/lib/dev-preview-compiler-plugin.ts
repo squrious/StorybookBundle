@@ -1,7 +1,7 @@
 import { createUnplugin } from 'unplugin';
 import dedent from 'ts-dedent';
 import VirtualModulesPlugin from 'webpack-virtual-modules';
-import { runSymfonyCommand } from './symfony';
+import { getPreviewHtml } from './symfony-api-http';
 import { computeAdditionalWatchPaths } from './computeAdditionalWatchPaths';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import { logger } from '@storybook/node-logger';
@@ -52,7 +52,7 @@ export const DevPreviewCompilerPlugin = createUnplugin<Options>((options) => {
 
             // Compile preview before each compilation in watch mode
             compiler.hooks.watchRun.tapPromise(PLUGIN_NAME, async () => {
-                previewHtml = await runSymfonyCommand('storybook:generate-preview');
+                previewHtml = (await getPreviewHtml()).content;
 
                 // Write preview module
                 v.writeModule(
