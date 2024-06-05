@@ -2,14 +2,42 @@
 
 namespace Storybook\Api;
 
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Storybook\Exception\ApiExceptionInterface;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\HttpFoundation\Request;
 
-class AbstractAction
+/**
+ * @author Nicolas Rigaud <squrious@protonmail.com>
+ *
+ * @internal
+ */
+abstract class AbstractAction implements HttpActionInterface, ConsoleActionInterface
 {
-    protected function json(mixed $data): JsonResponse
+    abstract public static function getName(): string;
+
+    /**
+     * @throws ApiExceptionInterface
+     */
+    abstract public function __invoke(...$args): mixed;
+
+    /**
+     * @throws ApiExceptionInterface
+     */
+    public function handleRequest(Request $request): mixed
     {
-        $response = new JsonResponse($data, 200);
-        $response->setEncodingOptions($response->getEncodingOptions() | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE);
-        return $response;
+        return $this(...$request->query->all(), ...$request->request->all());
+    }
+
+    public function configure(Command $command): void
+    {
+    }
+
+    /**
+     * @throws ApiExceptionInterface
+     */
+    public function execute(InputInterface $input): mixed
+    {
+        return $this(...$input->getArguments());
     }
 }

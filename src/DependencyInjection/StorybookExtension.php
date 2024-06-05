@@ -2,12 +2,16 @@
 
 namespace Storybook\DependencyInjection;
 
+use Storybook\Api\ConsoleActionInterface;
+use Storybook\Api\HttpActionInterface;
+use Storybook\Api\StorybookApiCommand;
 use Storybook\ArgsProcessor\StorybookArgsProcessor;
 use Storybook\Attributes\AsArgsProcessor;
 use Storybook\Attributes\AsComponentMock;
 use Storybook\Command\GeneratePreviewCommand;
 use Storybook\Command\GetComponentClassPathCommand;
 use Storybook\Command\StorybookInitCommand;
+use Storybook\Controller\StorybookApiController;
 use Storybook\Controller\StorybookController;
 use Storybook\DependencyInjection\Compiler\ComponentMockPass;
 use Storybook\EventListener\ComponentMockSubscriber;
@@ -68,13 +72,6 @@ class StorybookExtension extends Extension implements ConfigurationInterface, Pr
             }
         );
 
-        $loader = new PhpFileLoader(
-            $container,
-            new FileLocator(__DIR__ . '/../../config')
-        );
-
-        $loader->load('api.php');
-
         $config = (new Processor())->processConfiguration($this, $configs);
 
         // Proxy listener
@@ -128,17 +125,6 @@ class StorybookExtension extends Extension implements ConfigurationInterface, Pr
         $container->register('storybook.component_proxy_factory', ComponentProxyFactory::class)
             ->setArgument(0, new AbstractArgument(sprintf('Provided in "%s".', ComponentMockPass::class)));
 
-        // Internal commands
-        $container->register('storybook.generate_preview_command', GeneratePreviewCommand::class)
-            ->setArgument(0, new Reference('twig'))
-            ->setArgument(1, new Reference('event_dispatcher'))
-            ->addTag('console.command', ['name' => 'storybook:generate-preview'])
-        ;
-
-        $container->register('storybook.resolve_component_file', GetComponentClassPathCommand::class)
-            ->setArgument(0, new Reference('ux.twig_component.component_factory'))
-            ->addTag('console.command', ['name' => 'storybook:component-file-path']);
-
         // Init command
         $container->register('storybook.init_command', StorybookInitCommand::class)
             ->setArgument(0, $container->getParameter('kernel.project_dir'))
@@ -153,6 +139,29 @@ class StorybookExtension extends Extension implements ConfigurationInterface, Pr
         $container->register('storybook.component_mock_subscriber', ComponentMockSubscriber::class)
             ->setArgument(0, new Reference('storybook.component_proxy_factory'))
             ->addTag('kernel.event_subscriber');
+
+        $this->configureApi($container);
+    }
+
+    private function configureApi(ContainerBuilder $container): void
+    {
+        $loader = new PhpFileLoader(
+            $container,
+            new FileLocator(__DIR__ . '/../../config')
+        );
+
+        $loader->load('api.php');
+
+        $container->register('storybook.api.abstract_command', StorybookApiCommand::class)
+            ->setAbstract(true)
+            ->setArgument(0, new AbstractArgument('action'))
+            ->setArgument(1, $container->getParameter('kernel.debug'));
+
+        $container->register('storybook.controller.api', StorybookApiController::class)
+            ->setArgument(0, new AbstractArgument('actions'))
+            ->setArgument(1, $container->getParameter('kernel.debug'))
+            ->addTag('controller.service_arguments');
+
     }
 
     public function getConfigTreeBuilder(): TreeBuilder

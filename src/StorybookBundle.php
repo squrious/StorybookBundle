@@ -2,6 +2,7 @@
 
 namespace Storybook;
 
+use Storybook\DependencyInjection\Compiler\ApiActionPass;
 use Storybook\DependencyInjection\Compiler\ArgsProcessorPass;
 use Storybook\DependencyInjection\Compiler\ComponentMockPass;
 use Storybook\DependencyInjection\StorybookExtension;
@@ -18,6 +19,7 @@ class StorybookBundle extends Bundle
     {
         $container->addCompilerPass(new ArgsProcessorPass());
         $container->addCompilerPass(new ComponentMockPass());
+        $container->addCompilerPass(new ApiActionPass());
     }
 
     public function getContainerExtension(): ?ExtensionInterface

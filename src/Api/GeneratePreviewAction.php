@@ -4,26 +4,28 @@ namespace Storybook\Api;
 
 use Storybook\Event\GeneratePreviewEvent;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
 use Twig\Environment;
 
-#[Route('/preview', name: 'preview', methods: ['GET'])]
+/**
+ * @author Nicolas Rigaud <squrious@protonmail.com>
+ *
+ * @internal
+ */
 class GeneratePreviewAction extends AbstractAction
 {
     public function __construct(private readonly Environment $twig, private readonly EventDispatcherInterface $eventDispatcher)
     {
     }
 
-    public function __invoke(): Response
+    public static function getName(): string
+    {
+        return 'generate-preview';
+    }
+
+    public function __invoke(mixed ...$args): string
     {
         $this->eventDispatcher->dispatch(new GeneratePreviewEvent());
 
-        $content = $this->twig->render('@Storybook/preview.html.twig');
-
-        $result = new GeneratePreviewOutput();
-        $result->content = $content;
-
-        return $this->json($result);
+        return $this->twig->render('@Storybook/preview.html.twig');
     }
 }

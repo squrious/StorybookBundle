@@ -11,7 +11,6 @@ type PreviewHtml = {
 };
 
 export const getPreviewHtml = async () => {
-    console.log('HERE WE ARE');
     const url = prepareRequest('http://localhost:8000', '/preview');
     const response = await fetch(url, {
         method: 'GET',

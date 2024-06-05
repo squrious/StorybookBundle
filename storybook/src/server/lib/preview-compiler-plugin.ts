@@ -1,16 +1,21 @@
 import { createUnplugin } from 'unplugin';
-import { getPreviewHtml } from './symfony';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import { logger } from '@storybook/node-logger';
 import dedent from 'ts-dedent';
 import { injectPreviewHtml } from './injectPreviewHtml';
+import { SymfonyApi } from '../../symfony-api';
 
 const PLUGIN_NAME = 'preview-plugin';
+
+export type Options = {
+    api: SymfonyApi;
+};
 
 /**
  * Compile preview HTML.
  */
-export const PreviewCompilerPlugin = createUnplugin(() => {
+export const PreviewCompilerPlugin = createUnplugin<Options>((options) => {
+    const { api } = options;
     return {
         name: PLUGIN_NAME,
         webpack(compiler) {
@@ -21,7 +26,7 @@ export const PreviewCompilerPlugin = createUnplugin(() => {
                     async (params) => {
                         try {
 
-                            const previewHtml = await getPreviewHtml();
+                            const previewHtml = await api.generatePreview();
                             params.html = injectPreviewHtml(previewHtml, params.html);
 
                             return params;

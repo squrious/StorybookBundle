@@ -109,7 +109,9 @@
         "nodeEntries": [
             "./src/preset.ts",
             "./src/server/framework-preset.ts",
-            "./src/builders/webpack-builder.ts"
+            "./src/builders/webpack-builder.ts",
+            "./src/symfony-api/console.ts",
+            "./src/symfony-api/http.ts"
         ],
         "exportEntries": [
             "./src/index.ts"

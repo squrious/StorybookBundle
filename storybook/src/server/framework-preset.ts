@@ -1,9 +1,3 @@
-import {
-    getBundleConfig,
-    getKernelProjectDir,
-    getTwigComponentConfiguration,
-    TwigComponentConfiguration,
-} from './lib/symfony';
 import { StorybookConfig, SymfonyOptions } from '../types';
 import { join } from 'path';
 import { PreviewCompilerPlugin } from './lib/preview-compiler-plugin';
@@ -11,17 +5,23 @@ import { DevPreviewCompilerPlugin } from './lib/dev-preview-compiler-plugin';
 import { TwigLoaderPlugin } from './lib/twig-loader-plugin';
 import { PresetProperty } from '@storybook/types';
 import dedent from 'ts-dedent';
-
+import { getSymfonyApi, TwigComponentConfiguration } from '../symfony-api';
+import type { SymfonyApi } from '../symfony-api';
 type BuildOptions = {
     twigComponent: TwigComponentConfiguration;
     runtimeDir: string;
     projectDir: string;
     additionalWatchPaths: string[];
+    api: SymfonyApi;
 };
 
 const getBuildOptions = async (symfonyOptions: SymfonyOptions) => {
-    const projectDir = await getKernelProjectDir();
-    const twigComponentsConfig = await getTwigComponentConfiguration();
+    const apiType = symfonyOptions.api || 'console';
+
+    const symfonyApi = await getSymfonyApi(apiType);
+
+    const projectDir = await symfonyApi.getKernelProjectDir();
+    const twigComponentsConfig = await symfonyApi.getTwigComponentConfiguration();
 
     const componentNamespaces: { [p: string]: string } = {};
 
@@ -33,7 +33,7 @@ const getBuildOptions = async (symfonyOptions: SymfonyOptions) => {
 
     const anonymousNamespace = join(projectDir, 'templates', twigComponentsConfig['anonymous_template_directory']);
 
-    const runtimeDir = (await getBundleConfig()).runtime_dir;
+    const runtimeDir = (await symfonyApi.getStorybookBundleConfig()).runtime_dir;
 
     return {
         twigComponent: {
@@ -43,6 +43,7 @@ const getBuildOptions = async (symfonyOptions: SymfonyOptions) => {
         runtimeDir,
         projectDir,
         additionalWatchPaths: symfonyOptions.additionalWatchPaths || [],
+        api: symfonyApi,
     } as BuildOptions;
 };
 
@@ -60,10 +61,11 @@ export const webpack: StorybookConfig['webpack'] = async (config, options) => {
             ...(config.plugins || []),
             ...[
                 options.configType === 'PRODUCTION'
-                    ? PreviewCompilerPlugin.webpack()
+                    ? PreviewCompilerPlugin.webpack({api: symfonyOptions.api})
                     : DevPreviewCompilerPlugin.webpack({
                           projectDir: symfonyOptions.projectDir,
                           additionalWatchPaths: symfonyOptions.additionalWatchPaths,
+                          api: symfonyOptions.api,
                       }),
                 TwigLoaderPlugin.webpack({ twigComponentConfiguration: symfonyOptions.twigComponent }),
             ],

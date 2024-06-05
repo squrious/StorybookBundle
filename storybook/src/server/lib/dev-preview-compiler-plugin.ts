@@ -1,15 +1,16 @@
 import { createUnplugin } from 'unplugin';
 import dedent from 'ts-dedent';
 import VirtualModulesPlugin from 'webpack-virtual-modules';
-import { getPreviewHtml } from './symfony-api-http';
 import { computeAdditionalWatchPaths } from './computeAdditionalWatchPaths';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import { logger } from '@storybook/node-logger';
 import { injectPreviewHtml } from './injectPreviewHtml';
+import { SymfonyApi } from '../../symfony-api';
 
 const PLUGIN_NAME = 'dev-preview-plugin';
 
 export type Options = {
+    api: SymfonyApi;
     projectDir: string;
     additionalWatchPaths: string[];
 };
@@ -18,7 +19,7 @@ export type Options = {
  * Compile preview HTML for dev with HMR .
  */
 export const DevPreviewCompilerPlugin = createUnplugin<Options>((options) => {
-    const { projectDir, additionalWatchPaths } = options;
+    const { projectDir, additionalWatchPaths, api } = options;
 
     return {
         name: PLUGIN_NAME,
@@ -52,7 +53,7 @@ export const DevPreviewCompilerPlugin = createUnplugin<Options>((options) => {
 
             // Compile preview before each compilation in watch mode
             compiler.hooks.watchRun.tapPromise(PLUGIN_NAME, async () => {
-                previewHtml = (await getPreviewHtml()).content;
+                previewHtml = (await api.generatePreview());
 
                 // Write preview module
                 v.writeModule(

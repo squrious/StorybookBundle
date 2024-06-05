@@ -1,6 +1,6 @@
-import { TwigComponentConfiguration } from './symfony';
 import path from 'path';
 import dedent from 'ts-dedent';
+import { TwigComponentConfiguration } from '../../symfony-api';
 
 export class TwigComponentResolver {
     constructor(private config: TwigComponentConfiguration) {}

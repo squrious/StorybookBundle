@@ -1,3 +1,5 @@
+import { ApiType } from './symfony-api';
+
 export type { BuilderResult, TypescriptOptions } from '@storybook/core-webpack';
 
 import type {
@@ -31,6 +33,11 @@ export type SymfonyOptions = {
      * Additional paths to watch during compilation.
      */
     additionalWatchPaths?: string[];
+
+    /**
+     * Which Symfony API implementation to use for internal communication.
+     */
+    api?: ApiType
 };
 
 export type FrameworkOptions = {

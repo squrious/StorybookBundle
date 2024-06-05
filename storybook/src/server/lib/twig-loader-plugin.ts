@@ -2,9 +2,9 @@ import { createUnplugin } from 'unplugin';
 import dedent from 'ts-dedent';
 import { logger } from '@storybook/node-logger';
 import { extractComponentsFromTemplate } from './extractComponentsFromTemplate';
-import { TwigComponentConfiguration } from './symfony';
 import { TwigComponentResolver } from './TwigComponentResolver';
 import crypto from 'crypto';
+import { TwigComponentConfiguration } from '../../symfony-api';
 
 const PLUGIN_NAME = 'twig-loader';
 
