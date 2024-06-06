@@ -1,6 +1,12 @@
 import path from 'path';
 import dedent from 'ts-dedent';
-import { TwigComponentConfiguration } from '../../symfony-api';
+
+type TwigComponentConfiguration = {
+    anonymousTemplateDirectory: string;
+    namespaces: {
+        [p: string]: string;
+    };
+};
 
 export class TwigComponentResolver {
     constructor(private config: TwigComponentConfiguration) {}
@@ -11,12 +17,7 @@ export class TwigComponentResolver {
 
     resolveNameFromFile(file: string) {
         const stripDirectory = (file: string, dir: string) => {
-            return file
-                .replace(dir, '')
-                .replace(/^\//, '')
-                .replace('/', ':')
-                .replace('.html.twig', '')
-            ;
+            return file.replace(dir, '').replace(/^\//, '').replace('/', ':').replace('.html.twig', '');
         };
 
         for (const namespace in this.config.namespaces) {
@@ -62,9 +63,5 @@ export class TwigComponentResolver {
         } catch (err) {
             throw new Error(dedent`Unable to find template file for component "${name}": ${err}`);
         }
-    }
-
-    resolvePhpFileFromName(name: string) {
-
     }
 }

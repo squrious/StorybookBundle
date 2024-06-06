@@ -1,12 +1,7 @@
-export type TwigComponentConfiguration = {
-    anonymousTemplateDirectory: string;
-    namespaces: {
-        [p: string]: string;
-    };
-};
+import { SymfonyOptions } from '../types';
 
 export type ApiErrorData = {
-    error: string,
+    error: string;
     trace?: StackTrace;
 };
 
@@ -18,11 +13,11 @@ export type StackTrace = {
     type?: string;
 }[];
 
-type StorybookBundleConfig = {
-    runtime_dir: string;
+export type BundleConfiguration = {
+    [p: string]: any;
 };
 
-type SymfonyTwigComponentConfiguration = {
+export type SymfonyTwigComponentConfig = {
     anonymous_template_directory: string;
     defaults: {
         [p: string]: {
@@ -32,11 +27,24 @@ type SymfonyTwigComponentConfiguration = {
     };
 };
 
-export interface SymfonyApi {
-    getStorybookBundleConfig: () => Promise<StorybookBundleConfig>,
-    getTwigComponentConfiguration: () => Promise<SymfonyTwigComponentConfiguration>,
-    getKernelProjectDir: () => Promise<string>,
-    generatePreview: () => Promise<string>
+export interface SymfonyApi<TApi extends ApiType = ApiType, TConfig = unknown> {
+    getConfig: () => TConfig;
+    setConfig: (config: ApiOptions<TApi>, options: SymfonyOptions) => void;
+    getTwigComponentConfiguration: () => Promise<SymfonyTwigComponentConfig>;
+    getKernelProjectDir: () => Promise<string>;
+    generatePreview: () => Promise<string>;
 }
 
-export type ApiType = 'console' | 'http';
+type ApiConfigMap = {
+    console: unknown;
+    http: {
+        /**
+         * URL of the API server.
+         */
+        server?: string;
+    };
+};
+
+export type ApiType = keyof ApiConfigMap;
+
+export type ApiOptions<T extends ApiType> = ApiConfigMap[T];

@@ -1,32 +1,9 @@
 'use strict';
 
-var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
-  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
-}) : x)(function(x) {
-  if (typeof require !== "undefined")
-    return require.apply(this, arguments);
-  throw Error('Dynamic require of "' + x + '" is not supported');
-});
+var o=(e=>typeof require<"u"?require:typeof Proxy<"u"?new Proxy(e,{get:(r,t)=>(typeof require<"u"?require:r)[t]}):e)(function(e){if(typeof require<"u")return require.apply(this,arguments);throw Error('Dynamic require of "'+e+'" is not supported')});var n=[o.resolve("./server/framework-preset")],p=async(e,r)=>{let t=await r.presets.apply("framework");return {...e,builder:{name:o.resolve("./builders/webpack-builder"),options:typeof t=="string"?{}:t.options.builder||{}}}},a=async(e=[],r)=>{let t=Object.keys(await r.presets.apply("docs",{},r)).length>0;return e.concat(o.resolve("./entry-preview")).concat(t?[o.resolve("./entry-preview-docs")]:[])};
 
-// src/preset.ts
-var addons = [__require.resolve("./server/framework-preset")];
-var core = async (config, options) => {
-  const framework = await options.presets.apply("framework");
-  return {
-    ...config,
-    builder: {
-      name: __require.resolve("./builders/webpack-builder"),
-      options: typeof framework === "string" ? {} : framework.options.builder || {}
-    }
-  };
-};
-var previewAnnotations = async (entry = [], options) => {
-  const docsEnabled = Object.keys(await options.presets.apply("docs", {}, options)).length > 0;
-  return entry.concat(__require.resolve("./entry-preview")).concat(docsEnabled ? [__require.resolve("./entry-preview-docs")] : []);
-};
-
-exports.addons = addons;
-exports.core = core;
-exports.previewAnnotations = previewAnnotations;
+exports.addons = n;
+exports.core = p;
+exports.previewAnnotations = a;
 //# sourceMappingURL=out.js.map
 //# sourceMappingURL=preset.js.map

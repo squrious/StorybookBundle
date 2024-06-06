@@ -1,4 +1,4 @@
-import { ApiType } from './symfony-api';
+import { ApiOptions, ApiType } from './symfony-api';
 
 export type { BuilderResult, TypescriptOptions } from '@storybook/core-webpack';
 
@@ -17,6 +17,17 @@ type FrameworkName = '@sensiolabs/storybook-symfony-webpack5';
 type BuilderName = '@storybook/builder-webpack5';
 
 type ProxyPaths = string[] | string;
+
+type ApiOption =
+    | ApiType
+    | {
+          type: 'console';
+          config: ApiOptions<'console'>;
+      }
+    | {
+          type: 'http';
+          config: ApiOptions<'http'>;
+      };
 
 export type SymfonyOptions = {
     /**
@@ -37,7 +48,7 @@ export type SymfonyOptions = {
     /**
      * Which Symfony API implementation to use for internal communication.
      */
-    api?: ApiType
+    api?: ApiOption;
 };
 
 export type FrameworkOptions = {

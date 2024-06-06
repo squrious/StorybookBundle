@@ -66,7 +66,8 @@ const config: StorybookConfig = {
                         ],
                         additionalWatchPaths: [
                             'assets',
-                        ]
+                        ],
+                        api: 'http'
                     }
                     : {}
         },

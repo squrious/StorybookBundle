@@ -1,50 +1,41 @@
 import { StorybookConfig, SymfonyOptions } from '../types';
-import { join } from 'path';
 import { PreviewCompilerPlugin } from './lib/preview-compiler-plugin';
 import { DevPreviewCompilerPlugin } from './lib/dev-preview-compiler-plugin';
 import { TwigLoaderPlugin } from './lib/twig-loader-plugin';
 import { PresetProperty } from '@storybook/types';
 import dedent from 'ts-dedent';
-import { getSymfonyApi, TwigComponentConfiguration } from '../symfony-api';
+import { ApiType, SymfonyTwigComponentConfig } from '../symfony-api';
 import type { SymfonyApi } from '../symfony-api';
+
 type BuildOptions = {
-    twigComponent: TwigComponentConfiguration;
-    runtimeDir: string;
+    twigComponentConfiguration: SymfonyTwigComponentConfig;
     projectDir: string;
     additionalWatchPaths: string[];
-    api: SymfonyApi;
+    getPreviewHtml: () => Promise<string>;
 };
 
-const getBuildOptions = async (symfonyOptions: SymfonyOptions) => {
-    const apiType = symfonyOptions.api || 'console';
+import { pathToFileURL } from 'node:url';
+const getSymfonyApi = async <T extends ApiType>(symfonyOptions: SymfonyOptions): Promise<SymfonyApi<T>> => {
+    const api =
+        symfonyOptions.api === undefined
+            ? { type: 'console', config: {} }
+            : typeof symfonyOptions.api === 'string'
+              ? {
+                    type: symfonyOptions.api,
+                    config: {},
+                }
+              : {
+                    type: symfonyOptions.api.type,
+                    config: symfonyOptions.api.config,
+                };
 
-    const symfonyApi = await getSymfonyApi(apiType);
+    const apiModulePath = require.resolve(`../symfony-api/${api.type}`);
 
-    const projectDir = await symfonyApi.getKernelProjectDir();
-    const twigComponentsConfig = await symfonyApi.getTwigComponentConfiguration();
+    const apiModule = await import(pathToFileURL(apiModulePath).href);
 
-    const componentNamespaces: { [p: string]: string } = {};
+    apiModule.setConfig(api.config, symfonyOptions);
 
-    for (const { name_prefix: namePrefix, template_directory: templateDirectory } of Object.values(
-        twigComponentsConfig.defaults
-    )) {
-        componentNamespaces[namePrefix] = join(projectDir, 'templates', templateDirectory);
-    }
-
-    const anonymousNamespace = join(projectDir, 'templates', twigComponentsConfig['anonymous_template_directory']);
-
-    const runtimeDir = (await symfonyApi.getStorybookBundleConfig()).runtime_dir;
-
-    return {
-        twigComponent: {
-            anonymousTemplateDirectory: anonymousNamespace,
-            namespaces: componentNamespaces,
-        },
-        runtimeDir,
-        projectDir,
-        additionalWatchPaths: symfonyOptions.additionalWatchPaths || [],
-        api: symfonyApi,
-    } as BuildOptions;
+    return apiModule;
 };
 
 export const webpack: StorybookConfig['webpack'] = async (config, options) => {
@@ -52,8 +43,17 @@ export const webpack: StorybookConfig['webpack'] = async (config, options) => {
 
     const frameworkOptions = typeof framework === 'string' ? {} : framework.options;
 
+    const symfonyOptions = frameworkOptions.symfony as SymfonyOptions;
+
+    const api = await getSymfonyApi(symfonyOptions);
+
     // This options resolution should be done right before creating the build configuration (i.e. not in options presets).
-    const symfonyOptions = await getBuildOptions(frameworkOptions.symfony);
+    const buildOptions = {
+        twigComponentConfiguration: await api.getTwigComponentConfiguration(),
+        projectDir: await api.getKernelProjectDir(),
+        additionalWatchPaths: symfonyOptions.additionalWatchPaths || [],
+        getPreviewHtml: api.generatePreview,
+    } as BuildOptions;
 
     return {
         ...config,
@@ -61,13 +61,16 @@ export const webpack: StorybookConfig['webpack'] = async (config, options) => {
             ...(config.plugins || []),
             ...[
                 options.configType === 'PRODUCTION'
-                    ? PreviewCompilerPlugin.webpack({api: symfonyOptions.api})
+                    ? PreviewCompilerPlugin.webpack({ getPreviewHtml: buildOptions.getPreviewHtml })
                     : DevPreviewCompilerPlugin.webpack({
-                          projectDir: symfonyOptions.projectDir,
-                          additionalWatchPaths: symfonyOptions.additionalWatchPaths,
-                          api: symfonyOptions.api,
+                          projectDir: buildOptions.projectDir,
+                          additionalWatchPaths: buildOptions.additionalWatchPaths,
+                          getPreviewHtml: buildOptions.getPreviewHtml,
                       }),
-                TwigLoaderPlugin.webpack({ twigComponentConfiguration: symfonyOptions.twigComponent }),
+                TwigLoaderPlugin.webpack({
+                    twigComponentConfiguration: buildOptions.twigComponentConfiguration,
+                    projectDir: buildOptions.projectDir,
+                }),
             ],
         ],
         module: {

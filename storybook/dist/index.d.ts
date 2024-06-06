@@ -2,6 +2,18 @@ import { StorybookConfig as StorybookConfig$2, Options, TypescriptOptions as Typ
 export { ArgTypes, Args, Parameters, StrictArgs } from '@storybook/types';
 import { BuilderOptions, StorybookConfigWebpack, TypescriptOptions } from '@storybook/builder-webpack5';
 
+type ApiConfigMap = {
+    console: unknown;
+    http: {
+        /**
+         * URL of the API server.
+         */
+        server?: string;
+    };
+};
+type ApiType = keyof ApiConfigMap;
+type ApiOptions<T extends ApiType> = ApiConfigMap[T];
+
 type RulesConfig = any;
 type ModuleConfig = {
     rules?: RulesConfig[];
@@ -33,6 +45,13 @@ type StorybookConfig$1<TWebpackConfiguration = WebpackConfiguration> = Storybook
 type FrameworkName = '@sensiolabs/storybook-symfony-webpack5';
 type BuilderName = '@storybook/builder-webpack5';
 type ProxyPaths = string[] | string;
+type ApiOption = ApiType | {
+    type: 'console';
+    config: ApiOptions<'console'>;
+} | {
+    type: 'http';
+    config: ApiOptions<'http'>;
+};
 type SymfonyOptions = {
     /**
      * Symfony server URL.
@@ -46,6 +65,10 @@ type SymfonyOptions = {
      * Additional paths to watch during compilation.
      */
     additionalWatchPaths?: string[];
+    /**
+     * Which Symfony API implementation to use for internal communication.
+     */
+    api?: ApiOption;
 };
 type FrameworkOptions = {
     builder?: BuilderOptions;
