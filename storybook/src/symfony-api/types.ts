@@ -27,13 +27,35 @@ export type SymfonyTwigComponentConfig = {
     };
 };
 
-export interface SymfonyApi<TApi extends ApiType = ApiType, TConfig = unknown> {
-    getConfig: () => TConfig;
-    setConfig: (config: ApiOptions<TApi>, options: SymfonyOptions) => void;
-    getTwigComponentConfiguration: () => Promise<SymfonyTwigComponentConfig>;
-    getKernelProjectDir: () => Promise<string>;
-    generatePreview: () => Promise<string>;
+export interface SymfonyApi<TConfig = any> {
+    /**
+     * Process framework options to get the API config.
+     */
+    processConfig: (options: SymfonyOptions) => TConfig;
+
+    /**
+     * Get TwigComponent configuration from Symfony.
+     */
+    getTwigComponentConfiguration: ApiAction<SymfonyTwigComponentConfig, TConfig>;
+
+    /**
+     * Get Kernel project directory from Symfony.
+     */
+    getKernelProjectDir: ApiAction<string, TConfig>;
+
+    /**
+     * Generate the HTML preview template.
+     */
+    generatePreview: ApiActionFn<string, TConfig>;
 }
+
+type ApiActionFn<T, TConfig, TArgs = undefined> = TArgs extends undefined
+    ? (config: TConfig) => () => Promise<T>
+    : (config: TConfig) => (args: TArgs) => Promise<T>;
+
+type ApiAction<T, TConfig, TArgs = undefined> = TArgs extends undefined
+    ? (config: TConfig) => Promise<T>
+    : (config: TConfig, args: TArgs) => Promise<T>;
 
 type ApiConfigMap = {
     console: unknown;

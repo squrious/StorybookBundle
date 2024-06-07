@@ -2,16 +2,11 @@
 
 namespace Storybook\DependencyInjection;
 
-use Storybook\Api\ConsoleActionInterface;
-use Storybook\Api\HttpActionInterface;
-use Storybook\Api\StorybookApiCommand;
+use Storybook\Api\StorybookApiController;
 use Storybook\ArgsProcessor\StorybookArgsProcessor;
 use Storybook\Attributes\AsArgsProcessor;
 use Storybook\Attributes\AsComponentMock;
-use Storybook\Command\GeneratePreviewCommand;
-use Storybook\Command\GetComponentClassPathCommand;
 use Storybook\Command\StorybookInitCommand;
-use Storybook\Controller\StorybookApiController;
 use Storybook\Controller\StorybookController;
 use Storybook\DependencyInjection\Compiler\ComponentMockPass;
 use Storybook\EventListener\ComponentMockSubscriber;
@@ -27,6 +22,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Argument\AbstractArgument;
+use Symfony\Component\DependencyInjection\Argument\ServiceLocatorArgument;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -140,28 +136,30 @@ class StorybookExtension extends Extension implements ConfigurationInterface, Pr
             ->setArgument(0, new Reference('storybook.component_proxy_factory'))
             ->addTag('kernel.event_subscriber');
 
-        $this->configureApi($container);
+        $this->configureApi($container, $config);
     }
 
-    private function configureApi(ContainerBuilder $container): void
+    private function configureApi(ContainerBuilder $container, array $config): void
     {
+        $container->setParameter('storybook.api', $config['api']);
+
+        $container->register('storybook.api.controller', StorybookApiController::class)
+            ->setArgument(0, new ServiceLocatorArgument())
+            ->setArgument(1, $container->getParameter('kernel.debug'))
+            ->addTag('controller.service_arguments')
+        ;
+
+        if (false === $config['api']) {
+            // Do not load API services if APi is disabled
+            return;
+        }
+
         $loader = new PhpFileLoader(
             $container,
-            new FileLocator(__DIR__ . '/../../config')
+            new FileLocator(__DIR__.'/../../config')
         );
 
         $loader->load('api.php');
-
-        $container->register('storybook.api.abstract_command', StorybookApiCommand::class)
-            ->setAbstract(true)
-            ->setArgument(0, new AbstractArgument('action'))
-            ->setArgument(1, $container->getParameter('kernel.debug'));
-
-        $container->register('storybook.controller.api', StorybookApiController::class)
-            ->setArgument(0, new AbstractArgument('actions'))
-            ->setArgument(1, $container->getParameter('kernel.debug'))
-            ->addTag('controller.service_arguments');
-
     }
 
     public function getConfigTreeBuilder(): TreeBuilder
@@ -172,7 +170,12 @@ class StorybookExtension extends Extension implements ConfigurationInterface, Pr
 
         $rootNode
             ->children()
+                ->scalarNode('api')
+                    ->info('Which API to use for internal communication with the Storybook builder.')
+                    ->defaultValue('console')
+                ->end()
                 ->scalarNode('cache')
+                    ->info('Path to the story Twig cache directory, or false to disable caching.')
                     ->defaultValue('%kernel.cache_dir%/storybook/twig')
                 ->end()
                 ->arrayNode('sandbox')

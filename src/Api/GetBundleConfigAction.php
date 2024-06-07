@@ -63,7 +63,7 @@ class GetBundleConfigAction extends AbstractAction
             throw new ApiErrorException($content);
         }
 
-        return \json_decode($content, associative: true, flags: \JSON_THROW_ON_ERROR);
+        return json_decode($content, associative: true, flags: \JSON_THROW_ON_ERROR);
     }
 
     public function handleRequest(Request $request): mixed

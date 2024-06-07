@@ -1,4 +1,4 @@
-import type { StorybookConfig } from "@sensiolabs/storybook-symfony-webpack5";
+import type { StorybookConfig, ApiType } from "@sensiolabs/storybook-symfony-webpack5";
 
 const config: StorybookConfig = {
     stories: [
@@ -55,21 +55,28 @@ const config: StorybookConfig = {
     framework: {
         name: "@sensiolabs/storybook-symfony-webpack5",
         options: {
-            // 👇 Here configure the framework
-            symfony:
-                process.env.NODE_ENV === 'development'
-                    ? {
-                        server: 'http://localhost:8000',
-                        proxyPaths: [
-                            '/assets',
-                            '/_components',
-                        ],
-                        additionalWatchPaths: [
-                            'assets',
-                        ],
-                        api: 'http'
-                    }
-                    : {}
+            symfony: {
+                api: {
+                    ...(process.env.SYMFONY_API === 'console'
+                        ? { type: 'console' }
+                        : { type: 'http', config: { server: 'http://localhost:8000' } }
+                    )
+                },
+                ...(process.env.NODE_ENV === 'development'
+                        ? {
+                            server: 'http://localhost:8000',
+                            proxyPaths: [
+                                '/assets',
+                                '/_components',
+                            ],
+                            additionalWatchPaths: [
+                                'assets',
+                            ],
+                        }
+                        : {}
+                )
+            }
+            ,
         },
     },
     previewAnnotations: ['./templates/components/Storybook', './template-stories/lib/preview-api/preview.ts', './template-stories/addons/toolbars/preview.ts'],

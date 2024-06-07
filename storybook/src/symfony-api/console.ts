@@ -1,11 +1,9 @@
 import { exec, ExecException } from 'child_process';
 import dedent from 'ts-dedent';
-import { ApiErrorData, BundleConfiguration, SymfonyApi as BaseSymfonyApi } from './types';
-import { formatStackTrace } from './lib/formatStackTrace';
+import { BundleConfiguration, SymfonyApi as BaseApi } from './types';
+import { ApiError } from './lib/ApiError';
 
-type ApiConfig = unknown;
-type ApiType = 'console';
-export interface SymfonyApi extends BaseSymfonyApi<ApiType, ApiConfig> {}
+interface SymfonyApi extends BaseApi<undefined> {}
 
 type CommandOptions = {
     /**
@@ -26,31 +24,14 @@ const defaultOptions: CommandOptions = {
 
 const STORYBOOK_COMMAND_NAMESPACE = 'storybook:api';
 
-class ConsoleError extends Error {
+class ConsoleError extends ApiError {
     constructor(error: ExecException, stderr: string) {
-        let message = dedent`
+        const message = dedent`
                 Symfony console failed with exit status ${error.code}.
                 CMD: ${error.cmd}
                 `;
 
-        try {
-            const parsedStderr = JSON.parse(stderr) as ApiErrorData;
-
-            message += dedent`\n
-            Error: ${parsedStderr.error}
-            `;
-            if (parsedStderr.trace !== undefined) {
-                message += dedent`\n
-                Trace:
-                ${formatStackTrace(parsedStderr.trace)}
-                `;
-            }
-        } catch (err) {
-            message += dedent`\n
-            Error output: ${stderr}                    
-            `;
-        }
-        super(message);
+        super(message, stderr);
     }
 }
 
@@ -83,18 +64,17 @@ export const runSymfonyCommand = async <T = any>(
             } catch (err) {
                 reject(
                     new Error(dedent`
-                Failed to process JSON output for Symfony command.
-                CMD: ${finalCommand}
-                Output: ${stdout}
-                `)
+                    Failed to process JSON output for Symfony command.
+                    CMD: ${finalCommand}
+                    Output: ${stdout}
+                    `)
                 );
             }
         });
     });
 };
 
-export const setConfig: SymfonyApi['setConfig'] = () => {};
-export const getConfig: SymfonyApi['getConfig'] = () => ({});
+export const processConfig: SymfonyApi['processConfig'] = () => {};
 
 export const getKernelProjectDir: SymfonyApi['getKernelProjectDir'] = async () => {
     return runSymfonyCommand<string>('get-container-parameter', ['kernel.project_dir']);
@@ -104,6 +84,6 @@ export const getTwigComponentConfiguration: SymfonyApi['getTwigComponentConfigur
     return (await runSymfonyCommand<BundleConfiguration>('bundle-config', ['twig_component']))['twig_component'];
 };
 
-export const generatePreview: SymfonyApi['generatePreview'] = async () => {
-    return runSymfonyCommand<string>('generate-preview');
+export const generatePreview: SymfonyApi['generatePreview'] = () => {
+    return async () => runSymfonyCommand<string>('generate-preview');
 };

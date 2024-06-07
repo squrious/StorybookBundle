@@ -18,15 +18,17 @@ type BuilderName = '@storybook/builder-webpack5';
 
 type ProxyPaths = string[] | string;
 
+export type { ApiType };
+
 type ApiOption =
     | ApiType
     | {
           type: 'console';
-          config: ApiOptions<'console'>;
+          config?: ApiOptions<'console'>;
       }
     | {
           type: 'http';
-          config: ApiOptions<'http'>;
+          config?: ApiOptions<'http'>;
       };
 
 export type SymfonyOptions = {

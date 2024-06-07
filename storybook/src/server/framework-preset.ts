@@ -4,8 +4,9 @@ import { DevPreviewCompilerPlugin } from './lib/dev-preview-compiler-plugin';
 import { TwigLoaderPlugin } from './lib/twig-loader-plugin';
 import { PresetProperty } from '@storybook/types';
 import dedent from 'ts-dedent';
-import { ApiType, SymfonyTwigComponentConfig } from '../symfony-api';
+import { SymfonyTwigComponentConfig } from '../symfony-api';
 import type { SymfonyApi } from '../symfony-api';
+import { pathToFileURL } from 'node:url';
 
 type BuildOptions = {
     twigComponentConfiguration: SymfonyTwigComponentConfig;
@@ -14,9 +15,8 @@ type BuildOptions = {
     getPreviewHtml: () => Promise<string>;
 };
 
-import { pathToFileURL } from 'node:url';
-const getSymfonyApi = async <T extends ApiType>(symfonyOptions: SymfonyOptions): Promise<SymfonyApi<T>> => {
-    const api =
+const getBuildOptions = async (symfonyOptions: SymfonyOptions): Promise<BuildOptions> => {
+    const apiOptions =
         symfonyOptions.api === undefined
             ? { type: 'console', config: {} }
             : typeof symfonyOptions.api === 'string'
@@ -26,16 +26,20 @@ const getSymfonyApi = async <T extends ApiType>(symfonyOptions: SymfonyOptions):
                 }
               : {
                     type: symfonyOptions.api.type,
-                    config: symfonyOptions.api.config,
+                    config: symfonyOptions.api.config || {},
                 };
 
-    const apiModulePath = require.resolve(`../symfony-api/${api.type}`);
+    const apiModulePath = require.resolve(`../symfony-api/${apiOptions.type}`);
 
-    const apiModule = await import(pathToFileURL(apiModulePath).href);
+    const api: SymfonyApi = await import(pathToFileURL(apiModulePath).href);
+    const apiConfig = api.processConfig(symfonyOptions);
 
-    apiModule.setConfig(api.config, symfonyOptions);
-
-    return apiModule;
+    return {
+        twigComponentConfiguration: await api.getTwigComponentConfiguration(apiConfig),
+        projectDir: await api.getKernelProjectDir(apiConfig),
+        additionalWatchPaths: symfonyOptions.additionalWatchPaths || [],
+        getPreviewHtml: api.generatePreview(apiConfig),
+    };
 };
 
 export const webpack: StorybookConfig['webpack'] = async (config, options) => {
@@ -43,17 +47,8 @@ export const webpack: StorybookConfig['webpack'] = async (config, options) => {
 
     const frameworkOptions = typeof framework === 'string' ? {} : framework.options;
 
-    const symfonyOptions = frameworkOptions.symfony as SymfonyOptions;
-
-    const api = await getSymfonyApi(symfonyOptions);
-
     // This options resolution should be done right before creating the build configuration (i.e. not in options presets).
-    const buildOptions = {
-        twigComponentConfiguration: await api.getTwigComponentConfiguration(),
-        projectDir: await api.getKernelProjectDir(),
-        additionalWatchPaths: symfonyOptions.additionalWatchPaths || [],
-        getPreviewHtml: api.generatePreview,
-    } as BuildOptions;
+    const buildOptions = await getBuildOptions(frameworkOptions.symfony);
 
     return {
         ...config,

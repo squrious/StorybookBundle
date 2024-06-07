@@ -45,12 +45,13 @@ type StorybookConfig$1<TWebpackConfiguration = WebpackConfiguration> = Storybook
 type FrameworkName = '@sensiolabs/storybook-symfony-webpack5';
 type BuilderName = '@storybook/builder-webpack5';
 type ProxyPaths = string[] | string;
+
 type ApiOption = ApiType | {
     type: 'console';
-    config: ApiOptions<'console'>;
+    config?: ApiOptions<'console'>;
 } | {
     type: 'http';
-    config: ApiOptions<'http'>;
+    config?: ApiOptions<'http'>;
 };
 type SymfonyOptions = {
     /**
@@ -149,4 +150,4 @@ type Loader<TArgs = StrictArgs> = LoaderFunction<SymfonyRenderer, TArgs>;
 type StoryContext<TArgs = StrictArgs> = StoryContext$1<SymfonyRenderer, TArgs>;
 type Preview = ProjectAnnotations<SymfonyRenderer>;
 
-export { type Decorator, type FrameworkOptions, type Loader, type Meta, type Preview, type StoryContext, type StoryFn, type StoryObj, type StorybookConfig, type SymfonyOptions, type SymfonyRenderer, twig };
+export { type ApiType, type Decorator, type FrameworkOptions, type Loader, type Meta, type Preview, type StoryContext, type StoryFn, type StoryObj, type StorybookConfig, type SymfonyOptions, type SymfonyRenderer, twig };

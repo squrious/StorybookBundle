@@ -1,7 +1,15 @@
-storybook: ~
+parameters:
+  env(STORYBOOK_API): console
+
+storybook:
+  api: "%env(STORYBOOK_API)%"
 
 when@dev:
   storybook:
     sandbox:
       allowedFunctions:
         - 'dump'
+
+when@prod:
+  storybook:
+    api: false

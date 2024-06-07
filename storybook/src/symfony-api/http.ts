@@ -1,51 +1,32 @@
 import fetch from 'node-fetch';
 import type { Response } from 'node-fetch';
 
-import { ApiErrorData, ApiOptions, BundleConfiguration, SymfonyApi as BaseSymfonyApi } from './types';
+import { BundleConfiguration, SymfonyApi as BaseSymfonyApi } from './types';
 import dedent from 'ts-dedent';
-import { formatStackTrace } from './lib/formatStackTrace';
+import { ApiError } from './lib/ApiError';
 
 const API_BASE_URI = '/_storybook/api';
-
-export type HttpApi = 'http';
 
 export type ApiConfig = {
     server: string;
 };
 
-export interface SymfonyApi extends BaseSymfonyApi<HttpApi, ApiConfig> {}
+export interface SymfonyApi extends BaseSymfonyApi<ApiConfig> {}
 
-class HttpError extends Error {
+class HttpError extends ApiError {
     constructor(response: Response, text: string) {
-        let message = dedent`
-            Symfony API call failed with HTTP status ${response.status} (${response.statusText}
+        const message = dedent`
+            Symfony API call failed with HTTP status ${response.status} (${response.statusText})
             URL: ${response.url}
-            Output: ${text}
         `;
 
-        try {
-            const parsedError = JSON.parse(text) as ApiErrorData;
-            message += dedent`\n
-            Error: ${parsedError.error}
-            `;
-
-            if (parsedError.trace !== undefined) {
-                message += dedent`\n
-                Trace: 
-                ${formatStackTrace(parsedError.trace)}
-                `;
-            }
-        } catch (err) {
-            message += dedent`\n
-            (Failed to parse JSON)
-            `;
-        }
-        super(message);
+        super(message, text);
     }
 }
 
-const makeRequest = async <T>(endpoint: string, parameters: any = {}) => {
-    const host = getConfig().server;
+const makeRequest = async <T>(config: ApiConfig, endpoint: string, parameters: any = {}) => {
+    const host = config.server;
+
     const url = new URL(`${host}${API_BASE_URI}/${endpoint}`);
 
     url.search = new URLSearchParams(parameters).toString();
@@ -65,36 +46,28 @@ const makeRequest = async <T>(endpoint: string, parameters: any = {}) => {
     return JSON.parse(text) as T;
 };
 
-let apiConfig: ApiConfig;
+export const processConfig: SymfonyApi['processConfig'] = (options) => {
+    const server = options.api?.config?.server ?? options.server;
 
-export const setConfig: SymfonyApi['setConfig'] = (config: ApiOptions<'http'>, options) => {
-    const server = config.server ?? options.server;
     if (server === undefined) {
-        throw new Error(dedent`
-        Unable to determine the server host to use for API communication.
-        `);
+        throw new Error('Missing server');
     }
 
-    apiConfig = {
+    return {
         server: server,
     };
 };
 
-export const getConfig: SymfonyApi['getConfig'] = () => {
-    if (apiConfig === undefined) {
-        throw new Error('Config is not initialized');
-    }
-    return apiConfig;
+export const generatePreview: SymfonyApi['generatePreview'] = (config) => {
+    return async () => makeRequest<string>(config, 'generate-preview');
 };
 
-export const generatePreview: SymfonyApi['generatePreview'] = async () => {
-    return makeRequest<string>('generate-preview');
+export const getKernelProjectDir: SymfonyApi['getKernelProjectDir'] = async (config) => {
+    return makeRequest<string>(config, 'get-container-parameter', { name: 'kernel.project_dir' });
 };
 
-export const getKernelProjectDir: SymfonyApi['getKernelProjectDir'] = async () => {
-    return makeRequest<string>('get-container-parameter', { name: 'kernel.project_dir' });
-};
-
-export const getTwigComponentConfiguration: SymfonyApi['getTwigComponentConfiguration'] = async () => {
-    return (await makeRequest<BundleConfiguration>('bundle-config', { name: 'twig_component' }))['twig_component'];
+export const getTwigComponentConfiguration: SymfonyApi['getTwigComponentConfiguration'] = async (config) => {
+    return (await makeRequest<BundleConfiguration>(config, 'bundle-config', { name: 'twig_component' }))[
+        'twig_component'
+    ];
 };

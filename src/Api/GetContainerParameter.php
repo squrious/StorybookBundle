@@ -25,6 +25,7 @@ class GetContainerParameter extends AbstractAction
     public function __invoke(...$args): mixed
     {
         ['name' => $name] = $args;
+
         return $this->containerBag->get($name);
     }
 

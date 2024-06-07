@@ -2,33 +2,35 @@
 
 var child_process = require('child_process');
 
-function h(i){for(var o=[],r=1;r<arguments.length;r++)o[r-1]=arguments[r];var n=Array.from(typeof i=="string"?[i]:i);n[n.length-1]=n[n.length-1].replace(/\r?\n([\t ]*)$/,"");var t=n.reduce(function(e,s){var p=s.match(/\n([\t ]+|(?!\s).)/g);return p?e.concat(p.map(function(u){var m,f;return (f=(m=u.match(/[\t ]/g))===null||m===void 0?void 0:m.length)!==null&&f!==void 0?f:0})):e},[]);if(t.length){var a=new RegExp(`
-[	 ]{`+Math.min.apply(Math,t)+"}","g");n=n.map(function(e){return e.replace(a,`
-`)});}n[0]=n[0].replace(/^\r?\n/,"");var c=n[0];return o.forEach(function(e,s){var p=c.match(/(?:^|\n)( *)$/),u=p?p[1]:"",m=e;typeof e=="string"&&e.includes(`
-`)&&(m=String(e).split(`
-`).map(function(f,S){return S===0?f:""+u+f}).join(`
-`)),c+=m+n[s+1];}),c}var g=h;var l=i=>i.map(({file:o,line:r,function:n,class:t,type:a})=>`at ${t||""}${a||""}${n}() (${o}:${r})`).join(`
-`);var x={php:"php",script:"bin/console"},A="storybook:api",y=class extends Error{constructor(o,r){let n=g`
-                Symfony console failed with exit status ${o.code}.
-                CMD: ${o.cmd}
-                `;try{let t=JSON.parse(r);n+=g`\n
-            Error: ${t.error}
-            `,t.trace!==void 0&&(n+=g`\n
-                Trace:
-                ${l(t.trace)}
-                `);}catch{n+=g`\n
-            Error output: ${r}                    
-            `;}super(n);}},d=async(i,o=[],r={})=>{let n={...x,...r},t=[n.php,n.script,`${A}:${i}`].concat(...o).map(a=>`'${a}'`).join(" ");return new Promise((a,c)=>{child_process.exec(t,(e,s,p)=>{e&&c(new y(e,p));try{a(JSON.parse(s));}catch{c(new Error(g`
-                Failed to process JSON output for Symfony command.
-                CMD: ${t}
-                Output: ${s}
-                `));}});})},k=()=>{},D=()=>({}),M=async()=>d("get-container-parameter",["kernel.project_dir"]),P=async()=>(await d("bundle-config",["twig_component"])).twig_component,j=async()=>d("generate-preview");
+function x(e){for(var t=[],r=1;r<arguments.length;r++)t[r-1]=arguments[r];var n=Array.from(typeof e=="string"?[e]:e);n[n.length-1]=n[n.length-1].replace(/\r?\n([\t ]*)$/,"");var a=n.reduce(function(o,m){var c=m.match(/\n([\t ]+|(?!\s).)/g);return c?o.concat(c.map(function(u){var f,g;return (g=(f=u.match(/[\t ]/g))===null||f===void 0?void 0:f.length)!==null&&g!==void 0?g:0})):o},[]);if(a.length){var s=new RegExp(`
+[	 ]{`+Math.min.apply(Math,a)+"}","g");n=n.map(function(o){return o.replace(s,`
+`)});}n[0]=n[0].replace(/^\r?\n/,"");var p=n[0];return t.forEach(function(o,m){var c=p.match(/(?:^|\n)( *)$/),u=c?c[1]:"",f=o;typeof o=="string"&&o.includes(`
+`)&&(f=String(o).split(`
+`).map(function(g,h){return h===0?g:""+u+g}).join(`
+`)),p+=f+n[m+1];}),p}var i=x;var S=e=>e.map(({file:t,line:r,function:n,class:a,type:s})=>`at ${a||""}${s||""}${n}() (${t}:${r})`).join(`
+`),$=e=>{let t="";try{let r=JSON.parse(e);t+=i`\n
+            Error: ${r.error}
+            `,r.trace!==void 0&&(t+=i`\n
+                Trace: 
+                ${S(r.trace)}
+                `);}catch{t+=i`\n
+        Failed to parse JSON. Output text:
+        ${e}
+        `;}return t},d=class extends Error{constructor(t,r){t+=i`\n
+        ${$(r)}
+        `,super(t);}};var v={php:"php",script:"bin/console"},O="storybook:api",y=class extends d{constructor(t,r){let n=i`
+                Symfony console failed with exit status ${t.code}.
+                CMD: ${t.cmd}
+                `;super(n,r);}},l=async(e,t=[],r={})=>{let n={...v,...r},a=[n.php,n.script,`${O}:${e}`].concat(...t).map(s=>`'${s}'`).join(" ");return new Promise((s,p)=>{child_process.exec(a,(o,m,c)=>{o&&p(new y(o,c));try{s(JSON.parse(m));}catch{p(new Error(i`
+                    Failed to process JSON output for Symfony command.
+                    CMD: ${a}
+                    Output: ${m}
+                    `));}});})},N=()=>{},j=async()=>l("get-container-parameter",["kernel.project_dir"]),k=async()=>(await l("bundle-config",["twig_component"])).twig_component,B=()=>async()=>l("generate-preview");
 
-exports.generatePreview = j;
-exports.getConfig = D;
-exports.getKernelProjectDir = M;
-exports.getTwigComponentConfiguration = P;
-exports.runSymfonyCommand = d;
-exports.setConfig = k;
+exports.generatePreview = B;
+exports.getKernelProjectDir = j;
+exports.getTwigComponentConfiguration = k;
+exports.processConfig = N;
+exports.runSymfonyCommand = l;
 //# sourceMappingURL=out.js.map
 //# sourceMappingURL=console.js.map

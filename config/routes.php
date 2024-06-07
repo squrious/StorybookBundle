@@ -14,6 +14,7 @@ return function (RoutingConfigurator $routes) {
             ->requirements([
                 'action' => '.+'
             ])
-            ->controller('storybook.controller.api')
+            ->condition('"%storybook.api%" === "http"')
+            ->controller('storybook.api.controller')
     ;
 };

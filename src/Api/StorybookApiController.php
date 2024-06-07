@@ -1,8 +1,7 @@
 <?php
 
-namespace Storybook\Controller;
+namespace Storybook\Api;
 
-use Storybook\Api\HttpActionInterface;
 use Storybook\Exception\ApiExceptionInterface;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,8 +15,10 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class StorybookApiController
 {
-    public function __construct(private readonly ServiceLocator $actions, private readonly bool $debug)
-    {
+    public function __construct(
+        private readonly ServiceLocator $actions,
+        private readonly bool $debug,
+    ) {
     }
 
     public function __invoke(string $action, Request $request): Response
@@ -42,7 +43,7 @@ final class StorybookApiController
             ];
             if ($this->debug) {
                 $res += [
-                    'trace' => $th->getTraceAsString()
+                    'trace' => $th->getTraceAsString(),
                 ];
             }
 

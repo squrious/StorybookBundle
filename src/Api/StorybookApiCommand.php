@@ -18,7 +18,7 @@ final class StorybookApiCommand extends Command
 {
     public function __construct(private readonly ConsoleActionInterface $action, private readonly bool $debug)
     {
-        parent::__construct(\sprintf('storybook:api:%s', $this->action::getName()));
+        parent::__construct();
     }
 
     protected function configure(): void
@@ -46,12 +46,12 @@ final class StorybookApiCommand extends Command
             $output->writeln(json_encode($result, $jsonFlags));
         } catch (\Throwable $th) {
             $res = [
-                'error' => $th->getMessage()
+                'error' => $th->getMessage(),
             ];
 
             if ($this->debug) {
                 $res += [
-                    'trace' => $th->getTrace()
+                    'trace' => $th->getTrace(),
                 ];
             }
 
