@@ -4,8 +4,10 @@ namespace Storybook\EventListener;
 
 use Psr\Container\ContainerExceptionInterface;
 use Storybook\Event\ComponentRenderEvent;
-use Storybook\Mock\ComponentProxyFactory;
+use Storybook\Mock\ComponentMockFactory;
+use Storybook\Util\RequestAttributesHelper;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent;
 
 /**
  * Creates mock component proxy on component render.
@@ -17,13 +19,16 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 final class ComponentMockSubscriber implements EventSubscriberInterface
 {
     public function __construct(
-        private readonly ComponentProxyFactory $componentProxyFactory,
+        private readonly ComponentMockFactory $componentMockFactory,
     ) {
     }
 
     public static function getSubscribedEvents(): array
     {
-        return [ComponentRenderEvent::class => ['onComponentRender', -256]];
+        return [
+            ComponentRenderEvent::class => ['onComponentRender', -256],
+            ControllerArgumentsEvent::class => ['onKernelController', -256],
+        ];
     }
 
     /**
@@ -35,11 +40,48 @@ final class ComponentMockSubscriber implements EventSubscriberInterface
             // Anonymous components cannot be mocked
             return;
         }
-        if ($this->componentProxyFactory->componentHasMock($componentClass)) {
+        if ($this->componentMockFactory->componentHasMock($componentClass)) {
+            $mock = $this->componentMockFactory->create($componentClass, $event->getStory());
             $variables = $event->getVariables();
-            $variables['this'] = $this->componentProxyFactory->createProxyForStory($componentClass, $variables['this'], $event->getStory());
-            $variables['computed'] = $this->componentProxyFactory->createProxyForStory($componentClass, $variables['computed'], $event->getStory());
+
+            $variables = [
+                ...$variables,
+                'this' => $mock->getPropertiesProxy($variables['this']),
+                'computed' => $mock->getPropertiesProxy($variables['computed']),
+            ];
+
             $event->setVariables($variables);
+        }
+    }
+
+    public function onKernelController(ControllerArgumentsEvent $event): void
+    {
+        $request = $event->getRequest();
+
+        if (!RequestAttributesHelper::isStorybookRequest($request)) {
+            return;
+        }
+
+        if (!$request->attributes->has('_live_component')) {
+            return;
+        }
+
+        [$component,$action] = $event->getController();
+
+        if ('__invoke' === $action) {
+            return;
+        }
+
+        $componentClass = $component::class;
+
+        if ($this->componentMockFactory->componentHasMock($componentClass)) {
+            $storybookAttributes = RequestAttributesHelper::getStorybookAttributes($request);
+
+            $mock = $this->componentMockFactory->create($componentClass, $storybookAttributes->story);
+            $liveActionProxy = $mock->getLiveActionProxy($component);
+
+            $event->setController($liveActionProxy->getCallable($action));
+            $event->setArguments($request->attributes->get('_live_request_data')['args'] ?? []);
         }
     }
 }

@@ -17,4 +17,9 @@ class Component
     {
         return 'computedProp';
     }
+
+    public function function(string $arg): string
+    {
+        return sprintf('function(%s)', $arg);
+    }
 }

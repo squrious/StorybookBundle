@@ -6,26 +6,27 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Storybook\Event\ComponentRenderEvent;
 use Storybook\EventListener\ComponentMockSubscriber;
-use Storybook\Mock\ComponentProxyFactory;
+use Storybook\Mock\ComponentMockFactory;
 use Storybook\Mock\MockedPropertiesProxy;
 
 class ComponentMockSubscriberTest extends TestCase
 {
-    public function testThisAndComputedAreProxified()
+    public function testThisAndComputedAreProxied()
     {
         $locator = $this->createMock(ContainerInterface::class);
         $locator->method('get')->willReturn(new \stdClass());
-        $proxyFactory = new ComponentProxyFactory($locator);
-        $proxyFactory->addMockConfiguration('Component', 'service', [
-            'storiesMocks' => [
-                'story' => [
-                    'foo' => 'bar',
+        $mockFactory = new ComponentMockFactory($locator);
+        $mockFactory->addMockConfiguration(
+            'Component',
+            [
+                'property' => [
+                    'stories' => [
+                        'foo' => 'bar',
+                    ],
                 ],
             ],
-            'globalMocks' => [
-            ],
-        ]);
-        $subscriber = new ComponentMockSubscriber($proxyFactory);
+        );
+        $subscriber = new ComponentMockSubscriber($mockFactory);
 
         $variables = [
             'this' => new \stdClass(),
@@ -39,10 +40,10 @@ class ComponentMockSubscriberTest extends TestCase
         $this->assertInstanceOf(MockedPropertiesProxy::class, $event->getVariables()['computed']);
     }
 
-    public function testComponentIsNotProxifiedIfNotConfigured()
+    public function testComponentIsNotProxiedIfNotConfigured()
     {
-        $proxyFactory = new ComponentProxyFactory($this->createMock(ContainerInterface::class));
-        $subscriber = new ComponentMockSubscriber($proxyFactory);
+        $mockFactory = new ComponentMockFactory($this->createMock(ContainerInterface::class));
+        $subscriber = new ComponentMockSubscriber($mockFactory);
 
         $variables = [
             'this' => $component = new \stdClass(),
@@ -58,8 +59,8 @@ class ComponentMockSubscriberTest extends TestCase
 
     public function testAnonymousComponentIsIgnored()
     {
-        $proxyFactory = new ComponentProxyFactory($this->createMock(ContainerInterface::class));
-        $subscriber = new ComponentMockSubscriber($proxyFactory);
+        $mockFactory = new ComponentMockFactory($this->createMock(ContainerInterface::class));
+        $subscriber = new ComponentMockSubscriber($mockFactory);
 
         $variables = [
             'this' => $component = new \stdClass(),

@@ -5,7 +5,7 @@ namespace Storybook\Tests\Functional\EventListener;
 use Storybook\Tests\StoryTestTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-class ComponentRenderSubscriberTest extends WebTestCase
+class ComponentMockSubscriberTest extends WebTestCase
 {
     use StoryTestTrait;
 
@@ -25,5 +25,6 @@ class ComponentRenderSubscriberTest extends WebTestCase
         $this->assertStringContainsString('Prop4: mocked prop4', $text);
         $this->assertStringContainsString('Prop5: prop5', $text);
         $this->assertStringContainsString('ComputedProp: mocked computedProp', $text);
+        $this->assertStringContainsString('Function: mocked(foo)', $text);
     }
 }

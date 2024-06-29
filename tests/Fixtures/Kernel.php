@@ -4,13 +4,16 @@ namespace Storybook\Tests\Fixtures;
 
 use Psr\Log\NullLogger;
 use Storybook\StorybookBundle;
+use Storybook\Tests\Fixtures\DependencyInjection\LiveComponentKernelBrowserPass;
 use Storybook\Tests\Fixtures\SandboxTest\DummyVariable;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\TwigBundle\TwigBundle;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Kernel as BaseKernel;
 use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
+use Symfony\UX\LiveComponent\LiveComponentBundle;
 use Symfony\UX\TwigComponent\TwigComponentBundle;
 
 /**
@@ -25,6 +28,7 @@ class Kernel extends BaseKernel
         yield new FrameworkBundle();
         yield new TwigBundle();
         yield new TwigComponentBundle();
+        yield new LiveComponentBundle();
         yield new StorybookBundle();
     }
 
@@ -88,6 +92,11 @@ class Kernel extends BaseKernel
         ;
     }
 
+    public function build(ContainerBuilder $container): void
+    {
+        $container->addCompilerPass(new LiveComponentKernelBrowserPass());
+    }
+
     public function getCacheDir(): string
     {
         return sys_get_temp_dir().'/cache'.spl_object_hash($this);
@@ -106,5 +115,6 @@ class Kernel extends BaseKernel
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
         $routes->import('@StorybookBundle/config/routes.php');
+        $routes->import('@LiveComponentBundle/config/routes.php')->prefix('/_components');
     }
 }

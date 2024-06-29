@@ -2,7 +2,9 @@
 
 namespace Storybook\DependencyInjection\Compiler;
 
+use Storybook\Attributes\LiveActionMock;
 use Storybook\Attributes\PropertyMock;
+use Storybook\Mock\MockConfiguration;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\ServiceLocatorTagPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -17,7 +19,7 @@ final class ComponentMockPass implements CompilerPassInterface
     {
         $providers = $container->findTaggedServiceIds('storybook.component_mock');
 
-        $proxyFactoryDefinition = $container->getDefinition('storybook.component_proxy_factory');
+        $mockFactoryDefinition = $container->getDefinition('storybook.mock_factory');
 
         $providerMap = [];
         foreach ($providers as $id => $tags) {
@@ -35,23 +37,23 @@ final class ComponentMockPass implements CompilerPassInterface
                     throw new \LogicException(sprintf('Component "%s" is already mocked by "%s" (trying to configure "%s").', $componentClass, $providerMap[$componentClass], $id));
                 }
 
-                $providerMap[$id] = new Reference($id);
+                $mockConfig = $this->extractMethodMocks($providerDefinition->getClass(), $componentClass);
 
-                $mocks = $this->extractMethodMocks($providerDefinition->getClass(), $componentClass);
+                $providerMap[$componentClass] = new Reference($id);
 
-                $proxyFactoryDefinition->addMethodCall('addMockConfiguration', [$componentClass, $id, $mocks]);
+                $mockFactoryDefinition->addMethodCall('addMockConfiguration', [$componentClass, $mockConfig]);
             }
         }
 
-        $proxyFactoryDefinition->setArgument(0, ServiceLocatorTagPass::register($container, $providerMap));
+        $mockFactoryDefinition->setArgument(0, ServiceLocatorTagPass::register($container, $providerMap));
     }
 
-    private function extractMethodMocks(string $loaderClass, string $componentClass): array
+    private function extractMethodMocks(string $providerClass, string $componentClass): array
     {
-        $globalMocks = [];
-        $storiesMocks = [];
+        $refl = new \ReflectionClass($providerClass);
 
-        $refl = new \ReflectionClass($loaderClass);
+        $propertyMockConfig = new MockConfiguration($componentClass, $providerClass);
+        $liveActionMockConfig = new MockConfiguration($componentClass, $providerClass);
 
         foreach ($refl->getMethods() as $reflMethod) {
             foreach ($reflMethod->getAttributes(PropertyMock::class) as $attr) {
@@ -60,28 +62,26 @@ final class ComponentMockPass implements CompilerPassInterface
 
                 $originalMethod = $attrInstance->property ?? $reflMethod->getName();
                 $targetMethod = $reflMethod->getName();
+                $stories = $attrInstance->stories;
 
-                if (null === $attrInstance->stories) {
-                    if (isset($globalMocks[$originalMethod])) {
-                        throw new \LogicException(sprintf('Cannot mock property "%s::%s" more than once in global scope (previously mocked by "%s::%s").', $componentClass, $originalMethod, $loaderClass, $globalMocks[$originalMethod]));
-                    }
-                    $globalMocks[$originalMethod] = $targetMethod;
-                } else {
-                    $stories = \is_array($attrInstance->stories) ? $attrInstance->stories : [$attrInstance->stories];
-                    foreach ($stories as $story) {
-                        $storiesMocks[$story] ??= [];
-                        if (isset($storiesMocks[$story][$originalMethod])) {
-                            throw new \LogicException(sprintf('Cannot mock property "%s::%s" more than once for story "%s". (previously mocked by "%s::%s").', $componentClass, $originalMethod, $story, $loaderClass, $storiesMocks[$story][$originalMethod]));
-                        }
-                        $storiesMocks[$story][$originalMethod] = $targetMethod;
-                    }
-                }
+                $propertyMockConfig->addMock($originalMethod, $targetMethod, $stories);
+            }
+
+            foreach ($reflMethod->getAttributes(LiveActionMock::class) as $attr) {
+                /** @var LiveActionMock $attrInstance */
+                $attrInstance = $attr->newInstance();
+
+                $originalMethod = $attrInstance->property ?? $reflMethod->getName();
+                $mockedAction = $reflMethod->getName();
+                $stories = $attrInstance->stories;
+
+                $liveActionMockConfig->addMock($originalMethod, $mockedAction, $stories);
             }
         }
 
         return [
-            'globalMocks' => $globalMocks,
-            'storiesMocks' => $storiesMocks,
+            'property' => $propertyMockConfig->toArray(),
+            'live_action' => $liveActionMockConfig->toArray(),
         ];
     }
 }

@@ -12,7 +12,7 @@ use Storybook\DependencyInjection\Compiler\ComponentMockPass;
 use Storybook\EventListener\ComponentMockSubscriber;
 use Storybook\EventListener\ProxyRequestListener;
 use Storybook\Exception\UnauthorizedStoryException;
-use Storybook\Mock\ComponentProxyFactory;
+use Storybook\Mock\ComponentMockFactory;
 use Storybook\StoryRenderer;
 use Storybook\Twig\StorybookEnvironmentConfigurator;
 use Storybook\Twig\TwigComponentSubscriber;
@@ -114,9 +114,10 @@ class StorybookExtension extends Extension implements ConfigurationInterface, Pr
         // Args processors
         $container->register('storybook.args_processor', StorybookArgsProcessor::class);
 
-        // Proxy factory
-        $container->register('storybook.component_proxy_factory', ComponentProxyFactory::class)
-            ->setArgument(0, new AbstractArgument(sprintf('Provided in "%s".', ComponentMockPass::class)));
+        // Mock factory
+        $container->register('storybook.mock_factory', ComponentMockFactory::class)
+            ->setArgument(0, new AbstractArgument(sprintf('Provided in "%s".', ComponentMockPass::class)))
+        ;
 
         // Internal commands
         $container->register('storybook.generate_preview_command', GeneratePreviewCommand::class)
@@ -137,7 +138,7 @@ class StorybookExtension extends Extension implements ConfigurationInterface, Pr
             ->addTag('kernel.event_subscriber');
 
         $container->register('storybook.component_mock_subscriber', ComponentMockSubscriber::class)
-            ->setArgument(0, new Reference('storybook.component_proxy_factory'))
+            ->setArgument(0, new Reference('storybook.mock_factory'))
             ->addTag('kernel.event_subscriber');
     }
 
