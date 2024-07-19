@@ -15,4 +15,12 @@ final class MockInvocationContext
         public readonly array $originalArgs,
     ) {
     }
+
+    /**
+     * @throws \ReflectionException
+     */
+    public function callComponentMethod(string $method, ...$args): mixed
+    {
+        return (new \ReflectionMethod($this->component, $method))->invokeArgs($this->component, $args);
+    }
 }

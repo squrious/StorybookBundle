@@ -7,7 +7,7 @@ namespace Storybook\Attributes;
  *
  * @author Nicolas Rigaud <squrious@protonmail.com>
  */
-#[\Attribute(\Attribute::TARGET_CLASS)]
+#[\Attribute(\Attribute::TARGET_CLASS | \Attribute::IS_REPEATABLE)]
 final class AsArgsProcessor
 {
     /**

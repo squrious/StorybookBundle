@@ -25,7 +25,7 @@ final class MockedPropertiesProxy
             return $this->callMockedMethod($name, $args);
         }
 
-        if (isset($this->component->$name)) {
+        if (property_exists($this->component, $name)) {
             // try property
             return $this->component->$name;
         }

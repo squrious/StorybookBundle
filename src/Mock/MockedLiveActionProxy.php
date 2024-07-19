@@ -22,6 +22,6 @@ final class MockedLiveActionProxy
             return $this->component->{$name}(...);
         }
 
-        throw new \LogicException('No mocked method nor original method found.');
+        throw new \LogicException(sprintf('No mocked method nor original method found for "%s::%s".', $this->component::class, $name));
     }
 }
