@@ -66,7 +66,13 @@ final class ComponentMockSubscriber implements EventSubscriberInterface
             return;
         }
 
-        [$component,$action] = $event->getController();
+        $controller = $event->getController();
+
+        if (!\is_array($controller)) {
+            return;
+        }
+
+        [$component,$action] = $controller;
 
         if ('__invoke' === $action) {
             return;
@@ -81,7 +87,11 @@ final class ComponentMockSubscriber implements EventSubscriberInterface
             $liveActionProxy = $mock->getLiveActionProxy($component);
 
             $event->setController($liveActionProxy->getCallable($action));
-            $event->setArguments($request->attributes->get('_live_request_data')['args'] ?? []);
+            $event->setArguments(
+                $request->attributes->get('_component_action_args')
+                ?? $request->attributes->get('_live_request_data')['args']
+                ?? []
+            );
         }
     }
 }

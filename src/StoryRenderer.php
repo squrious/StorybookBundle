@@ -2,6 +2,8 @@
 
 namespace Storybook;
 
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Storybook\Event\RenderStoryEvent;
 use Storybook\Exception\RenderException;
 use Storybook\Exception\UnauthorizedStoryException;
 use Twig\Environment;
@@ -14,6 +16,7 @@ final class StoryRenderer
 {
     public function __construct(
         private readonly Environment $twig,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -32,6 +35,7 @@ final class StoryRenderer
         $this->twig->setLoader($loader);
 
         try {
+            $this->eventDispatcher->dispatch(new RenderStoryEvent($story));
             return $this->twig->render($storyTemplateName, $story->getArgs()->toArray());
         } catch (SecurityError $th) {
             // SecurityError can actually be raised

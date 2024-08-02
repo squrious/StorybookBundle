@@ -109,6 +109,7 @@ class StorybookExtension extends Extension implements ConfigurationInterface, Pr
 
         $container->register('storybook.story_renderer', StoryRenderer::class)
             ->setArgument(0, new Reference('storybook.twig'))
+            ->setArgument(1, new Reference('event_dispatcher'))
         ;
 
         // Args processors
